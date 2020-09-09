@@ -2,8 +2,6 @@
 采用 BERT + BILSTM + CRF 网络进行处理
 """
 
-
-
 import os
 
 import keras_bert
@@ -12,7 +10,9 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras_contrib.layers import CRF
 
-from ner.config import BERT_PRE_TRAIN_PATH
+from ner.bert_crf.data_preprocess import DataProcess
+import ipdb
+from ner.config import BERT_PRE_TRAIN_PATH, DATA_DIR
 
 
 class BERTBILSTMCRF(object):
@@ -36,11 +36,10 @@ class BERTBILSTMCRF(object):
 
     def creat_model(self):
         print('load bert Model start!')
-
         model = keras_bert.load_trained_model_from_checkpoint(self.config_path,
                                                               checkpoint_file=self.check_point_path,
                                                               seq_len=self.max_len,
-                                                             trainable=True)
+                                                              trainable=True)
         print('load bert Model end!')
         inputs = model.inputs
         embedding = model.output
@@ -62,22 +61,21 @@ class BERTBILSTMCRF(object):
 
 
 if __name__ == '__main__':
-
-    from ner.bert_crf.data_preprocess import DataProcess
-
     dp = DataProcess()
     train_data, train_label, test_data, test_label = dp.get_data(one_hot=True)
-
+    
     md = BERTBILSTMCRF(vocab_size=dp.vocab_size, n_class=dp.tag_size)
     md.creat_model()
+    
     model = md.model
+    model.summary()
 
     # plot_model(model, to_file='picture/BERT_BILSTM_CRF.png', show_shapes=True)
-
+    #
     # exit()
 
     model.fit(train_data, train_label, batch_size=32, epochs=2,
               validation_data=[test_data, test_label])
+    model.save(os.path.join(DATA_DIR, "bert_ner.h5"))
+    model.save_weights(os.path.join(DATA_DIR, "bert_ner_weight.h5"))
 
-    model.save("bert_crf.h5")
-    model.save_weights("bert_crf_weight.h5")

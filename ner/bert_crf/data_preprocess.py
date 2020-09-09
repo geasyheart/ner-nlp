@@ -1,10 +1,8 @@
+import numpy as np
 import os
 
-import numpy as np
-from keras.utils import to_categorical
-
-from ner.config import MSRA_DIR
 from ner.vocab import get_w2i, get_tag2index
+from ner.config import MSRA_DIR
 
 unk_flag = '[UNK]'
 pad_flag = '[PAD]'
@@ -45,15 +43,12 @@ class DataProcess(object):
         path_test = os.path.join(MSRA_DIR, "test.txt")
 
         # 读取数据
+
         train_data, train_label = self.__bert_text_to_index(path_train)
         test_data, test_label = self.__bert_text_to_index(path_test)
 
         # 进行 one-hot处理
         if one_hot:
-            #         O O B-LOC I-LOC
-            # 0 0 ... 0 0  3     4
-            # 一共有7种Tag,所以转成(samples, 100, 7)
-
             def label_to_one_hot(index: []) -> []:
                 data = []
                 for line in index:
@@ -65,21 +60,8 @@ class DataProcess(object):
                     data.append(data_line)
                 return np.array(data)
 
-            def to_one_hot(label):
-                y = np.empty(
-                    shape=(
-                        len(label),
-                        self.max_len,
-                        self.tag_size
-                    )
-                )
-                for i, seq in enumerate(label):
-                    y[i, :, :] = to_categorical(seq, num_classes=self.tag_size)
-                return y
-
-            # train_label = label_to_one_hot(index=train_label)
-            train_label = to_one_hot(train_label)
-            test_label = to_one_hot(test_label)
+            train_label = label_to_one_hot(index=train_label)
+            test_label = label_to_one_hot(index=test_label)
         else:
             train_label = np.expand_dims(train_label, 2)
             test_label = np.expand_dims(test_label, 2)
@@ -92,39 +74,13 @@ class DataProcess(object):
         return dict(zip(self.w2i.values(), self.w2i.keys()))
 
     # texts 转化为 index序列
-    def __text_to_indexs(self, file_path: str) -> ([], []):
-        data, label = [], []
-        with open(file_path, 'r') as f:
-            line_data, line_label = [], []
-            for line in f:
-                if line != '\n':
-                    w, t = line.split()
-                    char_index = self.w2i.get(w, self.w2i[self.unk_flag])
-                    tag_index = self.tag2index.get(t, 0)
-                    line_data.append(char_index)
-                    line_label.append(tag_index)
-                else:
-                    if len(line_data) < self.max_len:
-                        pad_num = self.max_len - len(line_data)
-                        line_data = [self.pad_index] * pad_num + line_data
-                        line_label = [0] * pad_num + line_label
-                    else:
-                        line_data = line_data[:self.max_len]
-                        line_label = line_label[:self.max_len]
-                    data.append(line_data)
-                    label.append(line_label)
-                    line_data, line_label = [], []
-        return np.array(data), np.array(label)
 
     def __bert_text_to_index(self, file_path: str):
         """
-        https://github.com/YapheeetS/ml_sentiment_analysis/blob/7d871d67559959de2b67dd1fb76654333d04aae1/ml_code/bert_embedding.py
         bert的数据处理
-
         处理流程 所有句子开始添加 [CLS] 结束添加 [SEP]
         bert需要输入 ids和types所以需要两个同时输出
         由于我们句子都是单句的，所以所有types都填充0
-
         :param file_path:  文件路径
         :return: [ids, types], label_ids
         """
@@ -168,27 +124,24 @@ class DataProcess(object):
                     line_data_types = []
                     line_label = []
         return [np.array(data_ids), np.array(data_types)], np.array(label_ids)
+    def i2tag(self):
+        return {
+            value: key for key, value in self.tag2index.items()
+        }
+
+    def i2w(self):
+        return {
+            value: key for key, value in self.w2i.items()
+        }
 
 
-if __name__ == '__main__':
-    # dp = DataProcess(data_type='data')
-    # x_train, y_train, x_test, y_test = dp.get_data(one_hot=True)
-    # print(x_train.shape)
-    # print(y_train.shape)
-    # print(x_test.shape)
-    # print(y_test.shape)
-    #
-    # print(y_train[:1, :1, :100])
-
-    dp = DataProcess()
-    x_train, y_train, x_test, y_test = dp.get_data(one_hot=True)
-    print(x_train[0].shape)
-    print(x_train[1].shape)
-    print(y_train.shape)
-    print(x_test[0].shape)
-    print(x_test[1].shape)
-    print(y_test.shape)
-
-    print(y_train[:1, :1, :100])
-
-    pass
+    def to_index(self, sentence):
+        w_indices = [self.w2i.get(char, self.unk_index) for char in sentence]
+        max_len_buff = self.max_len - 2
+        if len(w_indices) > max_len_buff:
+            w_indices = w_indices[:max_len_buff]
+        w_indices = [self.cls_index] + w_indices + [self.sep_index]
+        if len(w_indices) < self.max_len:
+            pad_num = self.max_len - len(w_indices)
+            w_indices = [self.pad_index] * pad_num + w_indices
+        return [np.array(w_indices).reshape(1, -1), np.zeros(self.max_len).reshape(1, -1)]
