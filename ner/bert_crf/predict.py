@@ -6,6 +6,7 @@ from keras.engine.saving import load_model
 from keras_contrib.layers import CRF
 from keras_contrib.losses import crf_loss
 from keras_contrib.metrics import crf_accuracy
+from sklearn.metrics import f1_score
 
 from ner.bert_crf.data_preprocess import DataProcess
 from ner.config import DATA_DIR
@@ -29,12 +30,31 @@ class Predict(object):
         })
         self.model = load_model(self.abs_path, custom_objects=c)
 
-    def predict(self):
+    def score(self):
+        num2tag = self.dp.i2tag()
+        i2w = self.dp.i2w()
+
         train_data, train_label, test_data, test_label = self.dp.get_data(one_hot=True)
-        ipdb.set_trace()
-        #result = self.model.predict(test_data)
-        #print("here")
-        
+        y = self.model.predict(test_data)
+        label_indexs, predict_indexs = [], []
+        for i, x_line in enumerate(test_data[0]):
+            for j, index in enumerate(x_line):
+                char = i2w.get(index, ' ')
+                t_line = y[i]
+                t_index = np.argmax(t_line)
+                tag = num2tag.get(t_index, "O")
+
+                predict_indexs.append(t_index)
+
+                t_line = test_label[i]
+                t_index = np.argmax(t_line)
+                ori_tag = num2tag.get(t_index, 'O')
+
+                label_indexs.append(t_index)
+
+        f1score = f1_score(label_indexs, predict_indexs, average='macro')
+        print(f"f1score:{f1score}")
+
     def predict_sentence(self, sentence):
         num2tag = self.dp.i2tag()
         i2w = self.dp.i2w()
@@ -55,8 +75,9 @@ class Predict(object):
 
         ipdb.set_trace()
 
+
 if __name__ == '__main__':
     p = Predict()
-    #p.predict()
-    p.predict_sentence("我在马来西亚")
+    p.score()
+    # p.predict_sentence("我在马来西亚")
 

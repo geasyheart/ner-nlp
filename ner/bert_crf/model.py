@@ -74,7 +74,7 @@ if __name__ == '__main__':
     #
     # exit()
 
-    model.fit(train_data, train_label, batch_size=32, epochs=2,
+    model.fit(train_data, train_label, batch_size=32, epochs=25,
               validation_data=[test_data, test_label])
     model.save(os.path.join(DATA_DIR, "bert_ner.h5"))
     model.save_weights(os.path.join(DATA_DIR, "bert_ner_weight.h5"))
