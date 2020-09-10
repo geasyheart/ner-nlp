@@ -39,17 +39,16 @@ class Predict(object):
         label_indexs, predict_indexs = [], []
         for i, x_line in enumerate(test_data[0]):
             for j, index in enumerate(x_line):
-                char = i2w.get(index, ' ')
+                char = i2w.get(index, " ")
                 t_line = y[i]
-                t_index = np.argmax(t_line)
+                t_index = np.argmax(t_line[j])
                 tag = num2tag.get(t_index, "O")
 
                 predict_indexs.append(t_index)
 
                 t_line = test_label[i]
-                t_index = np.argmax(t_line)
-                ori_tag = num2tag.get(t_index, 'O')
-
+                t_index = np.argmax(t_line[j])
+                ori_tag = num2tag.get(t_index, "O")
                 label_indexs.append(t_index)
 
         f1score = f1_score(label_indexs, predict_indexs, average='macro')
@@ -80,4 +79,5 @@ if __name__ == '__main__':
     p = Predict()
     p.score()
     # p.predict_sentence("我在马来西亚")
+
 
