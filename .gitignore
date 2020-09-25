@@ -4,5 +4,5 @@ __pycache__/
 *.pyo
 venv/
 bert-venv/
-ner/data/chinese_L-12_H-768_A-12/
+chinese_L-12_H-768_A-12/
 *.h5
