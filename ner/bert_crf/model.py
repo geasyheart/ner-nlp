@@ -11,7 +11,6 @@ from keras.optimizers import Adam
 from keras_contrib.layers import CRF
 
 from ner.bert_crf.data_preprocess import DataProcess
-import ipdb
 from ner.config import BERT_PRE_TRAIN_PATH, DATA_DIR
 
 

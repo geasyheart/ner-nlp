@@ -4,77 +4,65 @@ import os
 from task.config import DATA_DIR
 from task.utils import word2index
 
-unk_flag = '[UNK]'
-pad_flag = '[PAD]'
-cls_flag = '[CLS]'
-sep_flag = '[SEP]'
-
 
 class DataProcess(object):
-    def __init__(self,
-                 max_len=128,
-                 ):
-        """
-        数据处理
-        :param max_len: 句子最长的长度，默认为保留100
-        :param data_type: 数据类型，当前支持四种数据类型
-        """
-        self.w2i = word2index()  # word to index
+    def __init__(
+            self,
+            max_len=128,
+    ):
+        self.word2index = word2index()  # word to index
         self.tag2index = {
             "O": 0,
             "B-TIME": 1,
             "I-TIME": 2,
+            "B-LOC": 3,
+            "I-LOC": 4,
+            "B-TGT": 5,
+            "I-TGT": 6,
 
         }
-        self.vocab_size = len(self.w2i)
         self.tag_size = len(self.tag2index)
-        self.unk_flag = unk_flag
-        self.pad_flag = pad_flag
+
         self.max_len = max_len
 
-        self.unk_index = self.w2i.get(unk_flag, 101)
-        self.pad_index = self.w2i.get(pad_flag, 1)
-        self.cls_index = self.w2i.get(cls_flag, 102)
-        self.sep_index = self.w2i.get(sep_flag, 103)
+        self.cls_char = '[CLS]'
+        self.sep_char = '[SEP]'
+        self.pad_char = '[PAD]'
+        self.unk_char = '[UNK]'
+        self.cls_index = self.word2index[self.cls_char]
+        self.sep_index = self.word2index[self.sep_char]
+        self.pad_index = self.word2index[self.pad_char]
+        self.unk_index = self.word2index[self.unk_char]
 
-    def get_data(self, one_hot: bool = True) -> ([], [], [], []):
+    def get_data(self):
         """
         获取数据，包括训练、测试数据中的数据和标签
-        :param one_hot:
         :return:
         """
-        # 拼接地址
-        path_train = os.path.join(DATA_DIR, "time_train_data.txt")
-        path_test = os.path.join(DATA_DIR, "time_test_data.txt")
-
         # 读取数据
+        path_train = os.path.join(DATA_DIR, "union_train_data.txt")
 
         train_data, train_label = self.__bert_text_to_index(path_train)
-        test_data, test_label = self.__bert_text_to_index(path_test)
 
         # 进行 one-hot处理
-        if one_hot:
-            def label_to_one_hot(index: []) -> []:
-                data = []
-                for line in index:
-                    data_line = []
-                    for i, index in enumerate(line):
-                        line_line = [0] * self.tag_size
-                        line_line[index] = 1
-                        data_line.append(line_line)
-                    data.append(data_line)
-                return np.array(data)
+        def label_to_one_hot(index: []) -> []:
+            data = []
+            for line in index:
+                data_line = []
+                for i, index in enumerate(line):
+                    line_line = [0] * self.tag_size
+                    line_line[index] = 1
+                    data_line.append(line_line)
+                data.append(data_line)
+            return np.array(data)
 
-            train_label = label_to_one_hot(index=train_label)
-            test_label = label_to_one_hot(index=test_label)
-        else:
-            train_label = np.expand_dims(train_label, 2)
-            test_label = np.expand_dims(test_label, 2)
-        return train_data, train_label, test_data, test_label
+        train_label = label_to_one_hot(index=train_label)
+
+        return train_data, train_label
 
     # texts 转化为 index序列
 
-    def __bert_text_to_index(self, file_path: str):
+    def __bert_text_to_index(self, file_path):
         """
         bert的数据处理
         处理流程 所有句子开始添加 [CLS] 结束添加 [SEP]
@@ -86,6 +74,7 @@ class DataProcess(object):
         data_ids = []
         data_types = []
         label_ids = []
+
         with open(file_path, 'r') as f:
             line_data_ids = []
             line_data_types = []
@@ -98,7 +87,7 @@ class DataProcess(object):
                         if line[0] == " ":
                             continue
                     # bert 需要输入index和types 由于我们这边都是只有一句的，所以type都为0
-                    w_index = self.w2i.get(w, self.unk_index)
+                    w_index = self.word2index.get(w, self.unk_index)
                     t_index = self.tag2index.get(t, 0)
                     line_data_ids.append(w_index)  # index
                     line_data_types.append(0)  # types
@@ -135,11 +124,11 @@ class DataProcess(object):
 
     def i2w(self):
         return {
-            value: key for key, value in self.w2i.items()
+            value: key for key, value in self.word2index.items()
         }
 
     def to_index(self, sentence):
-        w_indices = [self.w2i.get(char, self.unk_index) for char in sentence]
+        w_indices = [self.word2index.get(char, self.unk_index) for char in sentence]
         max_len_buff = self.max_len - 2
         if len(w_indices) > max_len_buff:
             w_indices = w_indices[:max_len_buff]

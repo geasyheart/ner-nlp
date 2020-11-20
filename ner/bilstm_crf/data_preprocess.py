@@ -114,4 +114,5 @@ class DataProcess(object):
 
 if __name__ == '__main__':
     d = DataProcess()
+    d.get_data()
 
