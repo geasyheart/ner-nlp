@@ -19,6 +19,8 @@ class DataProcess(object):
             "I-LOC": 4,
             "B-TGT": 5,
             "I-TGT": 6,
+            "B-MONEY": 7,
+            'I-MONEY': 8
 
         }
         self.tag_size = len(self.tag2index)
@@ -40,7 +42,8 @@ class DataProcess(object):
         :return:
         """
         # 读取数据
-        path_train = os.path.join(DATA_DIR, "union_train_data.txt")
+        path_train = os.path.join(DATA_DIR, "all_total_money.txt")
+        # path_train = os.path.join(DATA_DIR, "union_train_data.txt")
 
         train_data, train_label = self.__bert_text_to_index(path_train)
 
