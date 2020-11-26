@@ -31,9 +31,9 @@ class BERTBILSTMCRF(object):
             trainable=True
         )
 
-        x = Bidirectional(LSTM(units=128, return_sequences=True))(bert_model.output)
-        x = Dropout(0.3)(x)
-        x = Dense(self.n_class)(x)
+        # x = Bidirectional(LSTM(units=128, return_sequences=True))(bert_model.output)
+        x = Dropout(0.3)(bert_model.output)
+        # x = Dense(self.n_class)(x)
         crf = CRF(self.n_class, sparse_target=False)
         x = crf(x)
         model = Model(inputs=bert_model.inputs, outputs=x)
