@@ -24,6 +24,11 @@ class BERTBILSTMCRF(object):
         self.n_class = self.dp.tag_size
 
     def get_model(self):
+        """
+        bert+crf 和 bert+softmax模型 按理说crf效果会更好，但是对比结果基本没有太大区别，这篇文章给出来一个比较合理的解释：
+        https://zhuanlan.zhihu.com/p/106654565
+        :return:
+        """
         bert_model = keras_bert.load_trained_model_from_checkpoint(
             os.path.join(BERT_PRETRAIN_PATH, 'bert_config.json'),
             checkpoint_file=os.path.join(BERT_PRETRAIN_PATH, 'bert_model.ckpt'),
